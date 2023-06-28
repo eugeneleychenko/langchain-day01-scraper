@@ -1,13 +1,14 @@
-from langchain import OpenAI, LLMChain, PromptTemplate
+from langchain import LLMChain, PromptTemplate
 from langchain.document_loaders import UnstructuredURLLoader
+# from langchain.document_loaders.recursive_url_loader import RecursiveUrlLoader
 from langchain.chat_models import ChatOpenAI
 from langchain.text_splitter import CharacterTextSplitter
 import os
-import openai
 from dotenv import find_dotenv, load_dotenv
 import requests
 import json
 import streamlit as st
+from bs4 import BeautifulSoup
 
 SERPAPI_API_KEY = os.getenv("SERPAPI_API_KEY")
 
@@ -55,28 +56,55 @@ def find_best_article_urls(response_data, query):
 
     return url_list
 
+def get_content_from_urls(urls):   
+    # # use unstructuredURLLoader
+    # loader = UnstructuredURLLoader(urls=urls)
+    # data = loader.load()
+
+    # return data
+
+    # Get the page
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:52.0) Gecko/20100101 Firefox/52.0"
+    }
+    response = requests.get(urls, headers=headers)
+
+    # Scrape the content
+
+    soup = BeautifulSoup(response.text, "html.parser")
+    body = soup.find("body")
+    return body.get_text()
+
+    
 
 def main():
     load_dotenv(find_dotenv())
 
-    st.set_page_config(page_title="Google Scraper", )
+    st.set_page_config(page_title="Google Scraper")
 
-    st.header("Scrape Google results and returns them")
+    # st.header("Scrape Google results and returns them")
+    st.header("Compile content of Google results")
     # openaiapi = st.text_input("OpenAI API Key")
-    query = st.text_input("Enter your query")
+    # query = st.text_input("Enter urls")
+    articles = st.text_input("Enter urls")
    
-    if query:
-            print(query)
-            st.write("Searching Google for: ", query)
+    if articles:
+            print(articles)
+            # st.write("Searching Google for: ", query)
+            st.write("Grabbing content of: ", articles)
             
             #functions
-            search_results = search(query)
-            find_best_article_urls(search_results, query)
+            # search_results = search(query)
+            # articles = find_best_article_urls(search_results, query)
+            content = get_content_from_urls(articles)
 
-            with st.expander("search results"):
-                st.json(search_results)
-            with st.expander("best articles"):
-                st.json(find_best_article_urls)
+            # with st.expander("Search Results"):
+            #     st.json(search_results)
+            # with st.expander("Best Articles"):
+            #     st.write(articles)
+            with st.expander("Article Content"):
+                st.write(content)
 
 
 
